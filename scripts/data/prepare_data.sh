@@ -13,7 +13,7 @@ train_data_path=train_datasets/qwen3_4b/perfectblend_train_regen.jsonl
 cache_dir=${HOME}/.cache/deepspec/qwen3_4b_target_cache
 
 server_host=127.0.0.1
-num_workers=8
+num_workers=2 # Use 2 workers to match the number of GPUs used for training and evaluation
 start_port=30000
 concurrency=32
 temperature=0.7
@@ -55,8 +55,9 @@ python scripts/data/generate_train_data.py \
 
 echo "Stop sglang before Step 3 if it is using the same GPUs."
 echo "Step 3/3: preparing Qwen3-4B target cache: ${cache_dir}"
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python scripts/data/prepare_target_cache.py \
+# Use only 2 GPUs
+CUDA_VISIBLE_DEVICES=0,1 python scripts/data/prepare_target_cache.py \
     --config "${config_path}" \
     --train-data-path "${train_data_path}" \
     --output-dir "${cache_dir}" \
-    --local-batch-size 16
+    --local-batch-size 2 # batch size 2 for testing, can be increased to 4 or 8 for GPUs with more memory (e.g. 80GB cards)

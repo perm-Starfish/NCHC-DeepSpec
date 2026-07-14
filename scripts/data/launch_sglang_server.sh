@@ -6,7 +6,7 @@ set -euo pipefail
 # See https://docs.sglang.ai/get_started/install.html for details.
 
 model_path=Qwen/Qwen3-4B
-num_workers=8
+num_workers=2
 start_port=30000
 start_nccl_port=31000
 host=0.0.0.0

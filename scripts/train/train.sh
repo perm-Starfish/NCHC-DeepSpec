@@ -35,6 +35,7 @@ target_cache_dir=${target_cache_dir:-${HOME}/.cache/deepspec/qwen3_4b_target_cac
 # with more memory (e.g. 4 or 8 on 80GB cards), or keep it at 1 if you hit OOM.
 # Override it without editing the config via:
 #   --opts "train.local_batch_size=4"
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python train.py \
+# Use only 2 GPUs
+CUDA_VISIBLE_DEVICES=0,1 python train.py \
     --config config/dspark/dspark_qwen3_4b.py \
     --opts "data.target_cache_path=${target_cache_dir}"
