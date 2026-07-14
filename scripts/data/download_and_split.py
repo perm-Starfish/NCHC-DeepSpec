@@ -134,12 +134,22 @@ def validate_conversations(row: dict, row_number: int) -> None:
         raise ValueError(f"row {row_number} produced no conversations.")
     if conversations[0]["role"] != "user":
         raise ValueError(f"row {row_number} does not start with a user message.")
-    for message in conversations:
-        if message["role"] not in {"user", "assistant"}:
-            raise ValueError(f"row {row_number} has invalid role: {message['role']}")
-        if not isinstance(message["content"], str) or not message["content"]:
-            raise ValueError(f"row {row_number} has invalid message content.")
 
+    for message_index, message in enumerate(conversations):
+        content = message.get("content")
+
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError(
+                f"row {row_number}, message {message_index} "
+                f"has invalid content: {content!r}; "
+                f"message={message!r}"
+            )
+
+    #for message in conversations:
+        #if message["role"] not in {"user", "assistant"}:
+            #raise ValueError(f"row {row_number} has invalid role: {message['role']}")
+        #if not isinstance(message["content"], str) or not message["content"]:
+            #raise ValueError(f"row {row_number} has invalid message content.")
 
 def user_turns(row: dict) -> list[str]:
     return [
@@ -155,9 +165,23 @@ def write_train_jsonl(dataset, output_path: Path) -> int:
     with output_path.open("w", encoding="utf-8") as handle:
         for row_number, row in enumerate(dataset, start=1):
             converted = normalize_conversations(row)
-            validate_conversations(converted, row_number)
+            #validate_conversations(converted, row_number)
+
+            # Skip invalid rows instead of raising an exception, so that we can still write valid rows to the output file.
+            try:
+                validate_conversations(converted, row_number)
+            except ValueError as exc:
+                print(f"[WARNING] Skipping invalid row: {exc}")
+                continue
+
             handle.write(json.dumps(converted, ensure_ascii=False) + "\n")
             count += 1
+    print(f"Written rows: {count}")
+    print(f"Skipped rows: {len(dataset) - count}")
+    print(
+        f"Skipped {len(dataset) - count} / {len(dataset)} rows "
+        f"({(len(dataset) - count) / len(dataset) * 100:.4f}%)"
+    )
     return count
 
 
@@ -167,10 +191,25 @@ def write_eval_jsonl(dataset, output_path: Path) -> int:
     with output_path.open("w", encoding="utf-8") as handle:
         for row_number, row in enumerate(dataset, start=1):
             converted = normalize_conversations(row)
-            validate_conversations(converted, row_number)
+            #validate_conversations(converted, row_number)
+
+            # Skip invalid rows instead of raising an exception, so that we can still write valid rows to the output file.
+            try:
+                validate_conversations(converted, row_number)
+            except ValueError as exc:
+                print(f"[WARNING] Skipping invalid eval row: {exc}")
+                continue
+
             turns = user_turns(converted)
             handle.write(json.dumps({"turns": turns}, ensure_ascii=False) + "\n")
             count += 1
+
+    print(f"Written rows: {count}")
+    print(f"Skipped rows: {len(dataset) - count}")
+    print(
+        f"Skipped {len(dataset) - count} / {len(dataset)} rows "
+        f"({(len(dataset) - count) / len(dataset) * 100:.4f}%)"
+    )        
     return count
 
 
