@@ -38,8 +38,19 @@ ENV CONDA_DEFAULT_ENV=deepspec
 # copy requirements for Docker build cache
 COPY requirements.txt /tmp/requirements.txt
 
-RUN python -m pip install --upgrade pip setuptools wheel \
-    && python -m pip install --no-cache-dir -r /tmp/requirements.txt
+# install PyTorch with CUDA 12.6 support
+RUN python -m pip install --no-cache-dir \
+    torch==2.11.0 \
+    torchvision==0.26.0 \
+    torchaudio==2.11.0 \
+    --index-url https://download.pytorch.org/whl/cu126
+
+# install other dependencies
+RUN python -m pip install --no-cache-dir \
+    -r /tmp/requirements.txt
+
+#RUN python -m pip install --upgrade pip setuptools wheel \
+    #&& python -m pip install --no-cache-dir -r /tmp/requirements.txt
 
 # copy project files; compose will override with host versions
 COPY . /workspace/DeepSpec

@@ -1,6 +1,8 @@
 # Install the CUDA build of torch that matches your machine if the default wheel
 # is not appropriate for your environment.
-torch==2.9.1
+
+# remove torch
+
 transformers==5.10.2
 numpy==2.4.4
 PyYAML==6.0.3
