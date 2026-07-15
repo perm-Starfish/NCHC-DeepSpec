@@ -12,7 +12,7 @@ eval_data_dir=eval_datasets
 train_data_path=train_datasets/qwen3_4b/perfectblend_train_regen.jsonl
 cache_dir=${HOME}/.cache/deepspec/qwen3_4b_target_cache
 
-server_host=127.0.0.1
+server_host=host.docker.internal
 num_workers=2 # Use 2 workers to match the number of GPUs used for training and evaluation
 start_port=30000
 concurrency=32
@@ -38,7 +38,7 @@ python scripts/data/download_and_split.py \
 mkdir -p "$(dirname "${train_data_path}")"
 
 echo "Step 2/3: generating Qwen3-4B train data: ${train_data_path}"
-echo "Start sglang first with: bash scripts/data/launch_sglang_server.sh"
+#echo "Start sglang first with: bash scripts/data/launch_sglang_server.sh"
 python scripts/data/generate_train_data.py \
     --model "${model_path}" \
     --server-address "${server_addresses[@]}" \
@@ -53,7 +53,8 @@ python scripts/data/generate_train_data.py \
     --input-file-path "${train_split_path}" \
     --output-file-path "${train_data_path}"
 
-echo "Stop sglang before Step 3 if it is using the same GPUs."
+#echo "Stop sglang before Step 3 if it is using the same GPUs."
+echo "Stop vLLM before Step 3 if it is using the same GPUs."
 echo "Step 3/3: preparing Qwen3-4B target cache: ${cache_dir}"
 # Use only 2 GPUs
 CUDA_VISIBLE_DEVICES=0,1 python scripts/data/prepare_target_cache.py \
