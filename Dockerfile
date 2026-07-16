@@ -20,6 +20,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim \
     && rm -rf /var/lib/apt/lists/*
 
+ARG LOCAL_UID=1000
+ARG LOCAL_GID=1000
+
+RUN groupadd -g ${LOCAL_GID} deepspec \
+    && useradd -m -u ${LOCAL_UID} -g ${LOCAL_GID} -s /bin/bash deepspec
+
 # Install Miniforge, which uses conda-forge by default
 RUN curl -L \
     https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh \
@@ -55,6 +61,6 @@ RUN python -m pip install --no-cache-dir \
 # copy project files; compose will override with host versions
 COPY . /workspace/DeepSpec
 
-RUN git config --global --add safe.directory /workspace/DeepSpec
+RUN git config --system --add safe.directory /workspace/DeepSpec
 
 CMD ["/bin/bash"]
