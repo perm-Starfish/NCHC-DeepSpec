@@ -1,5 +1,6 @@
 services:
   deepspec:
+    user: "${LOCAL_UID}:${LOCAL_GID}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -25,6 +26,7 @@ services:
 
     volumes:
       - .:/workspace/DeepSpec
+      - /data:/data
 
     # allow the container to access services running on the host
     extra_hosts:
@@ -33,6 +35,11 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       TOKENIZERS_PARALLELISM: "false"
+
+      DEEPSPEC_CACHE_DIR: /data/deepspec_cache
+      DEEPSPEC_TENSORBOARD_DIR: /data/tensorboard
+      DEEPSPEC_CHECKPOINT_DIR: /data/checkpoints
+      HF_HOME: /data/huggingface
 
     deploy:
       resources:
@@ -48,6 +55,10 @@ services:
     image: vllm/vllm-openai:v0.8.5
     container_name: vllm-gpu0
 
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     ipc: host
     restart: unless-stopped
 
@@ -62,7 +73,7 @@ services:
       - "30000:30000"
 
     volumes:
-      - ~/.cache/huggingface:/root/.cache/huggingface
+      - /data/huggingface:/root/.cache/huggingface
 
     environment:
       HF_HOME: /root/.cache/huggingface
@@ -79,6 +90,10 @@ services:
     image: vllm/vllm-openai:v0.8.5
     container_name: vllm-gpu1
 
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     ipc: host
     restart: unless-stopped
 
@@ -93,7 +108,7 @@ services:
       - "30001:30001"
 
     volumes:
-      - ~/.cache/huggingface:/root/.cache/huggingface
+      - /data/huggingface:/root/.cache/huggingface
 
     environment:
       HF_HOME: /root/.cache/huggingface
