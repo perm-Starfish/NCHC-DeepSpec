@@ -36,6 +36,6 @@ target_cache_dir=${target_cache_dir:-${HOME}/.cache/deepspec/qwen3_4b_target_cac
 # Override it without editing the config via:
 #   --opts "train.local_batch_size=4"
 # Use only 2 GPUs
-CUDA_VISIBLE_DEVICES=0,1 python train.py \
-    --config config/dspark/dspark_qwen3_4b.py \
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1} python train.py \
+    --config "${config_path}" \
     --opts "data.target_cache_path=${target_cache_dir}"
