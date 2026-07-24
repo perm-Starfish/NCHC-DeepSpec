@@ -35,7 +35,7 @@ train = dict(
 logging = dict(
     logging_steps=1,
     # Save an intermediate checkpoint every 50 optimizer steps
-    checkpointing_steps=50,
+    checkpointing_steps=30,
 )
 
 data = dict(

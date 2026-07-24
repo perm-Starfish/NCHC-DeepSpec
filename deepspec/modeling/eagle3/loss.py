@@ -112,25 +112,65 @@ def _log_eagle3_step_metrics(
     position_mask: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     valid_mask = position_mask.squeeze(-1) > 0
-    correct_mask = (draft_logits.argmax(-1) == target_probs.argmax(-1)) & valid_mask
-    draft_probs = torch.softmax(draft_logits.float(), dim=-1)
-    accept_rate_mask = 1.0 - 0.5 * (
-        draft_probs - target_probs.float()
-    ).abs().sum(dim=-1)
-    accept_rate_mask = accept_rate_mask.clamp_(0.0, 1.0)
-    accept_rate_mask = accept_rate_mask * valid_mask.to(torch.float32)
+
+    correct_mask = (
+        draft_logits.argmax(dim=-1) == target_probs.argmax(dim=-1)
+    ) & valid_mask
+
+    draft_probs = torch.softmax(
+        draft_logits,
+        dim=-1,
+        dtype=torch.float32,
+    )
+
+    vocab_size = draft_probs.shape[-1]
+    vocab_chunk_size = 4096
+
+    l1_distance = torch.zeros(
+        draft_probs.shape[:-1],
+        dtype=torch.float32,
+        device=draft_probs.device,
+    )
+
+    for vocab_start in range(0, vocab_size, vocab_chunk_size):
+        vocab_end = min(vocab_start + vocab_chunk_size, vocab_size)
+
+        l1_distance.add_(
+            (
+                draft_probs[..., vocab_start:vocab_end]
+                - target_probs[..., vocab_start:vocab_end]
+            )
+            .abs()
+            .sum(dim=-1)
+        )
+
+    accept_rate_mask = 1.0 - 0.5 * l1_distance
+    accept_rate_mask.clamp_(0.0, 1.0)
+    accept_rate_mask.mul_(valid_mask.to(torch.float32))
 
     correct = correct_mask.to(torch.float32).sum()
     valid_count = valid_mask.to(torch.float32).sum()
     accept_sum = accept_rate_mask.sum()
-    add_metric(f"accuracy@{step_idx}", correct, den=valid_count, tag="train")
-    add_metric(f"accept_rate@{step_idx}", accept_sum, den=valid_count, tag="train")
+
+    add_metric(
+        f"accuracy@{step_idx}",
+        correct,
+        den=valid_count,
+        tag="train",
+    )
+    add_metric(
+        f"accept_rate@{step_idx}",
+        accept_sum,
+        den=valid_count,
+        tag="train",
+    )
     add_metric(
         f"valid_tokens@{step_idx}",
         valid_count,
         reduction="dp_sum",
         tag="train",
     )
+
     return correct_mask, accept_rate_mask, valid_mask
 
 

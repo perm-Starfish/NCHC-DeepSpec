@@ -57,7 +57,10 @@ def get_compiled_flex_attention():
     global _COMPILED_FLEX_ATTENTION
     if _COMPILED_FLEX_ATTENTION is None:
         configure_eagle3_flex_compile()
-        _COMPILED_FLEX_ATTENTION = torch.compile(flex_attention)
+        _COMPILED_FLEX_ATTENTION = torch.compile(
+            flex_attention,
+            dynamic=True,
+        )
     return _COMPILED_FLEX_ATTENTION
 
 
@@ -70,6 +73,7 @@ def compile_friendly_flex_attention(
     flex_attention_func = (
         flex_attention if is_torchdynamo_compiling() else get_compiled_flex_attention()
     )
+    #return compiled_flex_attention(query, key, value, **kwargs)
     return flex_attention_func(query, key, value, **kwargs)
 
 
