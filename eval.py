@@ -42,8 +42,24 @@ def parse_args():
     parser.add_argument("--tensorboard-dir", type=str, default=None)
     parser.add_argument("--step", type=int, default=None,help=("step for tensorboard logging"),)
     parser.add_argument("--seed", type=int, default=980406)
+    parser.add_argument(
+    "--tasks",
+    nargs="+",
+    choices=[name for name, _ in TASKS],
+    default=None,
+    help="Tasks to evaluate. Default: all tasks.",
+)
     args = parser.parse_args()
-    args.tasks = list(TASKS)
+    selected_tasks = args.tasks
+    if selected_tasks is None:
+        args.tasks = list(TASKS)
+    else:
+        task_limits = dict(TASKS)
+        args.tasks = [
+            (task_name, task_limits[task_name])
+            for task_name in selected_tasks
+        ]
+
     return args
 
 
