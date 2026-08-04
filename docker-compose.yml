@@ -8,7 +8,7 @@ services:
         LOCAL_UID: ${LOCAL_UID}
         LOCAL_GID: ${LOCAL_GID}
 
-    image: deepspec:cuda12.2
+    image: deepspec:cuda12.6
     container_name: deepspec-dev
 
     dns:
@@ -47,6 +47,8 @@ services:
       DEEPSPEC_TENSORBOARD_DIR: /data/tensorboard
       DEEPSPEC_CHECKPOINT_DIR: /data/checkpoints
       HF_HOME: /data/huggingface
+      TORCH_HOME: /data/torch_cache
+      TORCH_EXTENSIONS_DIR: /data/torch_extensions
 
     deploy:
       resources:
