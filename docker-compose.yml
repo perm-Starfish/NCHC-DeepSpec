@@ -47,6 +47,7 @@ services:
       DEEPSPEC_TENSORBOARD_DIR: /data/tensorboard
       DEEPSPEC_CHECKPOINT_DIR: /data/checkpoints
       HF_HOME: /data/huggingface
+      HF_TOKEN: ${HF_TOKEN}
       TORCH_HOME: /data/torch_cache
       TORCH_EXTENSIONS_DIR: /data/torch_extensions
 
@@ -86,7 +87,7 @@ services:
 
     environment:
       HF_HOME: /root/.cache/huggingface
-
+      HF_TOKEN: ${HF_TOKEN}
     deploy:
       resources:
         reservations:
@@ -121,6 +122,7 @@ services:
 
     environment:
       HF_HOME: /root/.cache/huggingface
+      HF_TOKEN: ${HF_TOKEN}
 
     deploy:
       resources:
