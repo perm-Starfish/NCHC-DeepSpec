@@ -1,0 +1,103 @@
+{
+  "build_parameters": {
+    "math_eval_size": 500,
+    "math_train_size": 2000,
+    "mmlu_eval_size": 318,
+    "seed": 42,
+    "split_algorithm": "sha256(seed, dataset, id)"
+  },
+  "datasets": {
+    "cmath": {
+      "clean_unique_rows": 1097,
+      "duplicate_rows_removed": 1,
+      "quarantined_rows": 0,
+      "raw_rows": 1098,
+      "split_counts": {
+        "train": 1097
+      }
+    },
+    "gaokao_mathcloze": {
+      "clean_unique_rows": 116,
+      "duplicate_rows_removed": 2,
+      "quarantined_rows": 0,
+      "raw_rows": 118,
+      "split_counts": {
+        "train": 116
+      }
+    },
+    "gaokao_mathqa": {
+      "clean_unique_rows": 348,
+      "duplicate_rows_removed": 3,
+      "quarantined_rows": 0,
+      "raw_rows": 351,
+      "split_counts": {
+        "train": 348
+      }
+    },
+    "gsm8k": {
+      "clean_unique_rows": 1319,
+      "duplicate_rows_removed": 0,
+      "quarantined_rows": 0,
+      "raw_rows": 1319,
+      "split_counts": {
+        "eval": 1319
+      }
+    },
+    "math": {
+      "clean_unique_rows": 4995,
+      "duplicate_rows_removed": 0,
+      "quarantined_rows": 5,
+      "raw_rows": 5000,
+      "split_counts": {
+        "eval": 500,
+        "train": 2000,
+        "unused": 2495
+      }
+    },
+    "minif2f": {
+      "clean_unique_rows": 244,
+      "duplicate_rows_removed": 0,
+      "quarantined_rows": 0,
+      "raw_rows": 244,
+      "split_counts": {
+        "train": 244
+      }
+    },
+    "mmlu_stem": {
+      "clean_unique_rows": 3005,
+      "duplicate_rows_removed": 13,
+      "quarantined_rows": 0,
+      "raw_rows": 3018,
+      "split_counts": {
+        "eval": 318,
+        "train": 2687
+      }
+    },
+    "ocw": {
+      "clean_unique_rows": 272,
+      "duplicate_rows_removed": 0,
+      "quarantined_rows": 0,
+      "raw_rows": 272,
+      "split_counts": {
+        "eval": 272
+      }
+    }
+  },
+  "output_files": {
+    "combined_eval_prompts": "prompts/eval/all_eval.jsonl",
+    "combined_eval_references": "references/all_eval.jsonl",
+    "combined_train_prompts": "prompts/train/all_train.jsonl",
+    "duplicates": "reports/duplicates.jsonl",
+    "quarantine": "reports/quarantine.jsonl",
+    "train_eval_overlap": "reports/train_eval_overlap.jsonl"
+  },
+  "totals": {
+    "clean_unique_rows": 11396,
+    "duplicate_rows_removed": 19,
+    "eval_prompts": 2409,
+    "quarantined_rows": 5,
+    "raw_rows": 11420,
+    "train_prompts": 6492,
+    "train_rows_excluded_for_eval_overlap": 0
+  }
+}
