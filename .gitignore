@@ -17,3 +17,4 @@ normalized/
 prompts/
 references/
 regenerated/
+.venv/
