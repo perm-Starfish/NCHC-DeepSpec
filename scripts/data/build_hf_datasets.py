@@ -39,9 +39,9 @@ SOURCE_SPECS = {
         "revision": "53910fd73cb6695a0990ee8c79cc29ea6f3b0a84",
         "split": "train",
     },
-    "tw_instruct_500k_2511": {
-        "repo": "lianghsun/tw-instruct-500k-2511",
-        "revision": "c593014450b3bad7ddb0e1ff9f9f86e015bd435c",
+    "tw_instruct_500k": {
+        "repo": "lianghsun/tw-instruct-500k",
+        "revision": "6ccf638af64dc78fb840c970f2ea9509948f1378",
         "split": "train",
     },
     "bailong_bench": {
@@ -186,14 +186,7 @@ def load_hf_sources(args: BuildArgs) -> dict[str, list[dict[str, Any]]]:
                     cache_dir=str(args.cache_dir) if args.cache_dir else None,
                 )
         except Exception as exc:
-            hint = ""
-            if dataset == "tw_instruct_500k_2511":
-                hint = (
-                    " Accept the dataset access conditions at "
-                    "https://huggingface.co/datasets/lianghsun/"
-                    "tw-instruct-500k-2511 and ensure HF_TOKEN can read it."
-                )
-            raise BuildError(f"Failed to load {spec['repo']}: {exc}.{hint}") from exc
+            raise BuildError(f"Failed to load {spec['repo']}: {exc}") from exc
         sources[dataset] = [dict(row) for row in loaded]
     return sources
 
@@ -284,8 +277,8 @@ def normalize_hf_row(dataset: str, row: dict[str, Any], source_index: int) -> di
         answer = normalize_text(row.get("answer")) or message_answer
         reasoning = normalize_text(row.get("think"))
         source_id = row.get("id")
-    elif dataset == "tw_instruct_500k_2511":
-        all_messages = normalize_messages(row.get("messages"), dataset, source_index)
+    elif dataset == "tw_instruct_500k":
+        all_messages = normalize_messages(row.get("conversations"), dataset, source_index)
         messages, answer = prompt_before_final_assistant(
             all_messages, dataset, source_index
         )
@@ -548,7 +541,7 @@ def build_from_sources(
 
     for dataset, size in (
         ("tw_function_call_reasoning_10k", args.function_eval_size),
-        ("tw_instruct_500k_2511", args.instruct_eval_size),
+        ("tw_instruct_500k", args.instruct_eval_size),
     ):
         ranked = sorted(clean[dataset], key=lambda row: deterministic_rank(row, args.seed, f"{dataset}:eval"))
         hf_eval[dataset] = select_first_eligible(
@@ -610,7 +603,7 @@ def build_from_sources(
     choose_train("tw_math_reasoning_2k", None)
     choose_train("tw_reasoning_instruct_50k", args.reasoning_train_size)
     choose_train("tw_function_call_reasoning_10k", args.function_train_size)
-    choose_train("tw_instruct_500k_2511", args.instruct_train_size)
+    choose_train("tw_instruct_500k", args.instruct_train_size)
     # Bailong Bench is evaluation-only.
 
     split_lookup: dict[tuple[str, str], str] = {}

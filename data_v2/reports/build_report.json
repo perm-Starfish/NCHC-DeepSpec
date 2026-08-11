@@ -1,0 +1,112 @@
+{
+  "build_parameters": {
+    "function_eval_size": 200,
+    "function_train_size": 1000,
+    "instruct_eval_size": 500,
+    "instruct_train_size": 7000,
+    "reasoning_train_size": 5500,
+    "seed": 42,
+    "split_algorithm": "sha256(seed, dataset:split, stable_id)"
+  },
+  "datasets": {
+    "bailong_bench": {
+      "category_counts": {
+        "Arithmetic": 10,
+        "Copywriting generation": 10,
+        "Creative writing": 10,
+        "English instruction": 10,
+        "General": 10,
+        "Health consultation": 10,
+        "Knowledge-based question": 10,
+        "Mail assistant": 10,
+        "Morality and Ethics": 10,
+        "Multi-turn": 10,
+        "Open question": 10,
+        "Proofreading": 10,
+        "Summarization": 10,
+        "Translation": 10
+      },
+      "clean_unique_rows": 140,
+      "duplicate_rows_removed": 0,
+      "quarantined_rows": 0,
+      "raw_rows": 140,
+      "reference_answers_available": false,
+      "repo": "INX-TEXT/Bailong-bench",
+      "revision": "c2b3a333691e7ec8a9fb1c0e645f8f6a86417b97",
+      "scoring": "llm_as_a_judge",
+      "split_counts": {
+        "eval": 140
+      },
+      "turn_counts": {
+        "1": 130,
+        "3": 10
+      }
+    },
+    "tw_function_call_reasoning_10k": {
+      "clean_unique_rows": 9914,
+      "duplicate_rows_removed": 86,
+      "quarantined_rows": 0,
+      "raw_rows": 10000,
+      "repo": "twinkle-ai/tw-function-call-reasoning-10k",
+      "revision": "53910fd73cb6695a0990ee8c79cc29ea6f3b0a84",
+      "split_counts": {
+        "eval": 200,
+        "train": 1000,
+        "unused": 8714
+      }
+    },
+    "tw_instruct_500k": {
+      "clean_unique_rows": 499994,
+      "duplicate_rows_removed": 6,
+      "quarantined_rows": 0,
+      "raw_rows": 500000,
+      "repo": "lianghsun/tw-instruct-500k",
+      "revision": "6ccf638af64dc78fb840c970f2ea9509948f1378",
+      "split_counts": {
+        "eval": 500,
+        "train": 7000,
+        "unused": 492494
+      }
+    },
+    "tw_math_reasoning_2k": {
+      "clean_unique_rows": 2000,
+      "duplicate_rows_removed": 0,
+      "quarantined_rows": 0,
+      "raw_rows": 2000,
+      "repo": "twinkle-ai/tw-math-reasoning-2k",
+      "revision": "ef93a3601ac51c3d863eb82f2d6c6657ec930051",
+      "split_counts": {
+        "excluded_train_duplicate": 4,
+        "train": 1996
+      }
+    },
+    "tw_reasoning_instruct_50k": {
+      "clean_unique_rows": 49984,
+      "duplicate_rows_removed": 16,
+      "quarantined_rows": 0,
+      "raw_rows": 50000,
+      "repo": "twinkle-ai/tw-reasoning-instruct-50k",
+      "revision": "f5e1f079b9d2b769f82cd370e292ffdcea1c4f2c",
+      "split_counts": {
+        "train": 5500,
+        "unused": 44484
+      }
+    }
+  },
+  "stage1": {
+    "eval_prompts_before_merge": 2409,
+    "input_directory": "/home/ubuntu/Llama-DeepSpec/data",
+    "train_prompts_before_merge": 6492,
+    "train_removed_for_new_eval": 0
+  },
+  "totals": {
+    "combined_eval_prompts": 3249,
+    "combined_eval_references": 3249,
+    "combined_train_prompts": 21988,
+    "hf_clean_unique_rows": 562032,
+    "hf_duplicate_rows_removed": 108,
+    "hf_quarantined_rows": 0,
+    "hf_raw_rows": 562140,
+    "hf_train_exclusions": 4
+  }
+}

@@ -1,0 +1,4 @@
+{"dataset": "tw_math_reasoning_2k", "id": "tw_math_reasoning_2k_1821a5328e7a2c7a", "prompt_key_sha256": "688d3f53131ebac802c9d87a0a1f04860aac820015b3a78ab1cd03dc384f6aa2", "reason": "train_duplicate"}
+{"dataset": "tw_math_reasoning_2k", "id": "tw_math_reasoning_2k_7818215a4af2d987", "prompt_key_sha256": "382f22e0eafd4a1e20c9a2af1869f5a8c692c9897953fd7e29b45cd9420357eb", "reason": "train_duplicate"}
+{"dataset": "tw_math_reasoning_2k", "id": "tw_math_reasoning_2k_c9fa0d040c4dda4c", "prompt_key_sha256": "e2526b59b54e14175aed4ced125a474ffbd2ba1d2d55f838f3d285483fba851f", "reason": "train_duplicate"}
+{"dataset": "tw_math_reasoning_2k", "id": "tw_math_reasoning_2k_5427ba39106b5e0b", "prompt_key_sha256": "1f5ef30dc85131919bc52ee30fd77443c67680981c9a3b187dd4361d8302dd17", "reason": "train_duplicate"}
