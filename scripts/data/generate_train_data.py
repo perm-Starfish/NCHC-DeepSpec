@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--min-p", type=float, default=None)
     parser.add_argument("--repetition-penalty", type=float, default=None)
     parser.add_argument("--max-tokens", type=int, default=4096)
+    parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--num-samples", type=int, default=None)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--is-reasoning-model", action="store_true")
@@ -103,6 +104,8 @@ def build_query_kwargs(args, messages, max_tokens=None):
         "temperature": args.temperature,
         "stream": False,
     }
+    if args.seed is not None:
+        query_kwargs["seed"] = args.seed
     if args.top_p is not None:
         query_kwargs["top_p"] = args.top_p
     extra_body = {}
@@ -313,6 +316,7 @@ def print_config(args):
     print(f"  concurrency: {args.concurrency}")
     print(f"  max_tokens: {args.max_tokens}")
     print(f"  temperature: {args.temperature}")
+    print(f"  seed: {args.seed}")
     print(f"  top_p: {args.top_p}")
     print(f"  top_k: {args.top_k}")
     print(f"  min_p: {args.min_p}")
@@ -343,7 +347,7 @@ def main():
     valid_servers = validate_servers(args)
     print(f"Using servers: {valid_servers}")
 
-    file_mode = "a" if args.resume and skip_lines > 0 else "w"
+    file_mode = "a" if args.resume and processed_keys else "w"
     stats = {
         "success": 0,
         "errors": 0,
