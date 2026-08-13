@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -67,6 +68,31 @@ def compute_context_length(conversations):
     return length
 
 
+def sample_key(sample):
+    """Return a stable key that survives asynchronous output ordering."""
+    generation = sample.get("_generation")
+    if isinstance(generation, dict) and generation.get("key"):
+        return str(generation["key"])
+
+    dataset = str(sample.get("dataset", ""))
+    for field in ("id", "question_id", "stable_id"):
+        value = sample.get(field)
+        if value is not None and str(value):
+            return f"{dataset}:{field}:{value}"
+
+    prompt = {
+        "dataset": dataset,
+        "conversations": sample.get("conversations", []),
+    }
+    canonical = json.dumps(
+        prompt,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return f"{dataset}:sha256:{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
+
+
 def build_query_kwargs(args, messages, max_tokens=None):
     query_kwargs = {
         "model": args.model,
@@ -112,6 +138,7 @@ def call_sglang(args, server_address, sample, max_tokens=None):
 
     client = OpenAI(base_url=f"http://{server_address}/v1", api_key="None")
     regenerated = []
+    generation_turns = []
 
     for message in conversations:
         role = message.get("role")
@@ -138,8 +165,20 @@ def call_sglang(args, server_address, sample, max_tokens=None):
         if args.is_reasoning_model:
             response_message["thinking"] = response.choices[0].message.reasoning_content
         regenerated.append(response_message)
+        generation_turns.append(
+            {
+                "finish_reason": response.choices[0].finish_reason,
+                "completion_tokens": (
+                    response.usage.completion_tokens if response.usage else None
+                ),
+            }
+        )
 
     sample["conversations"] = regenerated
+    sample["_generation"] = {
+        "key": sample_key(sample),
+        "turns": generation_turns,
+    }
     sample["status"] = "success"
     return sample
 
@@ -149,13 +188,21 @@ def count_lines(path):
         return sum(1 for _ in handle)
 
 
-def find_resume_offset(output_path, error_path):
-    if not os.path.exists(output_path):
-        return 0, 0, 0
-
-    success_count = count_lines(output_path)
-    error_count = count_lines(error_path) if os.path.exists(error_path) else 0
-    return success_count + error_count, success_count, error_count
+def load_processed_keys(path):
+    keys = set()
+    if not os.path.exists(path):
+        return keys
+    with open(path, "r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, 1):
+            if not line.strip():
+                continue
+            try:
+                keys.add(sample_key(json.loads(line)))
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"Invalid JSON in resume file {path}:{line_number}: {exc}"
+                ) from exc
+    return keys
 
 
 def validate_server(args, server_address, probe):
@@ -239,6 +286,7 @@ def write_finished_result(
     sample = future.result()
     if sample["status"] == "error":
         error_handle.write(json.dumps(sample, ensure_ascii=False) + "\n")
+        error_handle.flush()
         stats["errors"] += 1
         return
 
@@ -252,6 +300,7 @@ def write_finished_result(
     stats["context_max"] = max(stats["context_max"], context_length)
     stats["success"] += 1
     output_handle.write(json.dumps(sample, ensure_ascii=False) + "\n")
+    output_handle.flush()
 
 
 def print_config(args):
@@ -276,19 +325,18 @@ def main():
 
     total_lines = count_lines(args.input_file_path)
     error_path = args.output_file_path.replace(".jsonl", "_error.jsonl")
-    skip_lines, existing_success, existing_errors = (
-        find_resume_offset(args.output_file_path, error_path)
-        if args.resume
-        else (0, 0, 0)
-    )
-    if skip_lines >= total_lines:
+    success_keys = load_processed_keys(args.output_file_path) if args.resume else set()
+    error_keys = load_processed_keys(error_path) if args.resume else set()
+    processed_keys = success_keys | error_keys
+    if len(processed_keys) >= total_lines:
         print(f"All {total_lines} samples are already processed.")
         return
 
-    if args.resume and skip_lines > 0:
+    if args.resume and processed_keys:
         print(
             "Resume mode: "
-            f"{existing_success} success, {existing_errors} errors, skip {skip_lines}"
+            f"{len(success_keys)} success, {len(error_keys)} errors, "
+            f"skip {len(processed_keys)} stable sample keys"
         )
 
     valid_servers = validate_servers(args)
@@ -312,20 +360,25 @@ def main():
         open(error_path, file_mode, encoding="utf-8") as error_handle,
         ThreadPoolExecutor(max_workers=args.concurrency * len(valid_servers)) as executor,
     ):
-        for _ in range(skip_lines):
-            next(input_handle, None)
-
-        progress_total = (
-            total_lines
-            if args.num_samples is None
-            else min(total_lines, skip_lines + args.num_samples)
+        progress_total = total_lines
+        progress = tqdm(
+            total=progress_total,
+            initial=min(len(processed_keys), total_lines),
+            desc="Processing",
         )
-        progress = tqdm(total=progress_total, initial=skip_lines, desc="Processing")
+        seen_input_keys = set()
         for line in input_handle:
             if args.num_samples is not None and submitted_count >= args.num_samples:
                 break
 
             sample = json.loads(line)
+            key = sample_key(sample)
+            if key in seen_input_keys:
+                raise ValueError(f"Duplicate sample key in input: {key}")
+            seen_input_keys.add(key)
+            if key in processed_keys:
+                continue
+            sample["_generation"] = {"key": key, "turns": []}
             server_address = valid_servers[next_server_index]
             next_server_index = (next_server_index + 1) % len(valid_servers)
 
