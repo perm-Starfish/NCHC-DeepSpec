@@ -1,0 +1,91 @@
+{
+  "dataset_counts": {
+    "cmath": 1097,
+    "gaokao_mathcloze": 116,
+    "gaokao_mathqa": 348,
+    "math": 2000,
+    "minif2f": 244,
+    "mmlu_stem": 2687,
+    "tw_function_call_reasoning_10k": 1000,
+    "tw_instruct_500k": 7000,
+    "tw_math_reasoning_2k": 1996,
+    "tw_reasoning_instruct_50k": 5500
+  },
+  "final_rows": 21988,
+  "finish_reasons": {
+    "stop": 21988
+  },
+  "input_file": "data_v2/prompts/train/all_train.jsonl",
+  "input_prompts": 21988,
+  "missing_ids": 0,
+  "output_file": "train_datasets/llama32_3b_instruct/all_train_regen.jsonl",
+  "output_sha256": "7375b7a0dda891a9c9e8899d9067b9d5b687c7098521a1f30b028fdf5ff51846",
+  "selected_source_counts": {
+    "function_regen_raw.jsonl": 998,
+    "function_retry_seed43.jsonl": 2,
+    "non_function_regen_raw.jsonl": 20839,
+    "non_function_retry_seed43.jsonl": 133,
+    "non_function_retry_seed44.jsonl": 12,
+    "non_function_retry_seed45.jsonl": 2,
+    "non_function_retry_seed46.jsonl": 2
+  },
+  "sources": [
+    {
+      "accepted_stop_rows": 20839,
+      "file": "non_function_regen_raw.jsonl",
+      "ignored_incomplete_rows": 149,
+      "rows": 20988,
+      "seed": 42,
+      "status": "loaded"
+    },
+    {
+      "accepted_stop_rows": 998,
+      "file": "function_regen_raw.jsonl",
+      "ignored_incomplete_rows": 2,
+      "rows": 1000,
+      "seed": 42,
+      "status": "loaded"
+    },
+    {
+      "accepted_stop_rows": 133,
+      "file": "non_function_retry_seed43.jsonl",
+      "ignored_incomplete_rows": 16,
+      "rows": 149,
+      "seed": 43,
+      "status": "loaded"
+    },
+    {
+      "accepted_stop_rows": 2,
+      "file": "function_retry_seed43.jsonl",
+      "ignored_incomplete_rows": 0,
+      "rows": 2,
+      "seed": 43,
+      "status": "loaded"
+    },
+    {
+      "accepted_stop_rows": 12,
+      "file": "non_function_retry_seed44.jsonl",
+      "ignored_incomplete_rows": 4,
+      "rows": 16,
+      "seed": 44,
+      "status": "loaded"
+    },
+    {
+      "accepted_stop_rows": 2,
+      "file": "non_function_retry_seed45.jsonl",
+      "ignored_incomplete_rows": 2,
+      "rows": 4,
+      "seed": 45,
+      "status": "loaded"
+    },
+    {
+      "accepted_stop_rows": 2,
+      "file": "non_function_retry_seed46.jsonl",
+      "ignored_incomplete_rows": 0,
+      "rows": 2,
+      "seed": 46,
+      "status": "loaded"
+    }
+  ],
+  "unexpected_ids": 0
+}

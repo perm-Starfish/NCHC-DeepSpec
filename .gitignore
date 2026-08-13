@@ -2,7 +2,7 @@
 __pycache__
 .pytest_cache/
 .ipynb_checkpoints/
-train_datasets/
+train_datasets/**/*.jsonl
 logs/
 *.log
 *.png
