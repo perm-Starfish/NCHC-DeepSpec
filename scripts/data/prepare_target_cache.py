@@ -70,6 +70,31 @@ def _get_target_hidden_size(target_model) -> int:
     return int(target_model.config.hidden_size)
 
 
+def _get_target_dtype(config) -> torch.dtype:
+    dtype_name = str(config.model.get("target_dtype", "bfloat16")).lower()
+    dtype_by_name = {
+        "bfloat16": torch.bfloat16,
+        "bf16": torch.bfloat16,
+        "float16": torch.float16,
+        "fp16": torch.float16,
+        "float32": torch.float32,
+        "fp32": torch.float32,
+    }
+    if dtype_name not in dtype_by_name:
+        raise ValueError(
+            f"Unsupported model.target_dtype={dtype_name!r}; "
+            f"choose one of {sorted(dtype_by_name)}."
+        )
+    target_dtype = dtype_by_name[dtype_name]
+    if target_dtype is torch.bfloat16 and not torch.cuda.is_bf16_supported():
+        raise RuntimeError(
+            "The target-cache config requests bfloat16, but the visible GPU "
+            "does not support native bfloat16. Use model.target_dtype='float16' "
+            "for V100 GPUs."
+        )
+    return target_dtype
+
+
 def _get_hook_tensor(output):
     if isinstance(output, torch.Tensor):
         return output
@@ -90,6 +115,16 @@ def run_target_forward_with_hooks(
     backbone = _get_target_backbone(target_model)
     layer_modules = backbone.layers
     target_layer_ids = [int(layer_id) for layer_id in target_layer_ids]
+    invalid_layer_ids = [
+        layer_id
+        for layer_id in target_layer_ids
+        if layer_id < -1 or layer_id >= len(layer_modules)
+    ]
+    if invalid_layer_ids:
+        raise ValueError(
+            f"Invalid target_layer_ids={invalid_layer_ids} for a target backbone "
+            f"with {len(layer_modules)} decoder layers."
+        )
     captured_hidden_states = {}
     handles = []
 
@@ -210,6 +245,8 @@ def main(local_rank: int):
     cli_args, config = parse_args()
     train_data_paths = list(cli_args.train_data_path)
     target_layer_ids = [int(layer_id) for layer_id in config.model.target_layer_ids]
+    target_dtype = _get_target_dtype(config)
+    local_files_only = bool(config.model.get("local_files_only", False))
     min_loss_tokens = int(cli_args.min_loss_tokens)
     seed_all(int(config.seed))
     device, global_rank, world_size = init_dist(local_rank)
@@ -221,6 +258,8 @@ def main(local_rank: int):
                 "train_data_path": train_data_paths,
                 "output_dir": output_dir,
                 "target_layer_ids": target_layer_ids,
+                "target_dtype": str(target_dtype),
+                "local_files_only": local_files_only,
                 "min_loss_tokens": min_loss_tokens,
                 "max_shard_bytes": int(cli_args.max_shard_bytes),
                 "local_batch_size": int(cli_args.local_batch_size),
@@ -250,11 +289,13 @@ def main(local_rank: int):
     local_subset = Subset(dataset, range(local_start, local_end))
     tokenizer = AutoTokenizer.from_pretrained(
         config.model.target_model_name_or_path,
+        local_files_only=local_files_only,
     )
     target_model = AutoModel.from_pretrained(
         config.model.target_model_name_or_path,
-        dtype=torch.bfloat16,
+        dtype=target_dtype,
         attn_implementation="sdpa",
+        local_files_only=local_files_only,
     ).to(device=device).eval()
     target_hidden_size = _get_target_hidden_size(target_model)
     train_collator = ConversationCollator(

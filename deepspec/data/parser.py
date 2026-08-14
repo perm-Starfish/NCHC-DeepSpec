@@ -50,6 +50,21 @@ TEMPLATE_REGISTRY.register(
     ),
 )
 
+TEMPLATE_REGISTRY.register(
+    "llama3",
+    ChatTemplate(
+        assistant_header=(
+            "<|start_header_id|>assistant<|end_header_id|>\n\n"
+        ),
+        user_header="<|start_header_id|>user<|end_header_id|>\n\n",
+        # Keep this unset.  Regeneration passed each sample's messages directly
+        # to the Llama server, so samples without a system turn must stay that
+        # way when they are serialized for the target cache.
+        system_prompt=None,
+        end_of_turn_token="<|eot_id|>",
+    ),
+)
+
 
 class GeneralParser:
     def __init__(self, tokenizer, chat_template):

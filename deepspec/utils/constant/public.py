@@ -13,6 +13,12 @@ QWEN_3_4B = "Qwen/Qwen3-4B"
 QWEN_3_8B = "Qwen/Qwen3-8B"
 QWEN_3_14B = "Qwen/Qwen3-14B"
 GEMMA_4_12B = "google/gemma-4-12B-it"
+LLAMA_3_2_3B_INSTRUCT = os.path.expanduser(
+    os.environ.get(
+        "LLAMA_3_2_3B_INSTRUCT_PATH",
+        "/data/models/meta-llama/Llama-3.2-3B-Instruct",
+    )
+)
 
 ## tensorboard dir
 BASE_TB_DIR = os.path.expanduser(

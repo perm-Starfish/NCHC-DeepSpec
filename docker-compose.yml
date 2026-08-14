@@ -41,6 +41,7 @@ services:
 
     environment:
       PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /workspace/DeepSpec
       TOKENIZERS_PARALLELISM: "false"
 
       DEEPSPEC_CACHE_DIR: /data/deepspec_cache
@@ -50,6 +51,7 @@ services:
       HF_TOKEN: ${HF_TOKEN}
       TORCH_HOME: /data/torch_cache
       TORCH_EXTENSIONS_DIR: /data/torch_extensions
+      LLAMA_3_2_3B_INSTRUCT_PATH: /data/models/meta-llama/Llama-3.2-3B-Instruct
 
     deploy:
       resources:
