@@ -4,6 +4,10 @@ from deepspec.modeling.dspark.gemma4.config import (
     build_draft_config as build_gemma4_draft_config,
 )
 from deepspec.modeling.dspark.loss import compute_dspark_loss
+from deepspec.modeling.dspark.llama3 import Llama3DSparkModel
+from deepspec.modeling.dspark.llama3.config import (
+    build_draft_config as build_llama3_draft_config,
+)
 from deepspec.modeling.dspark.qwen3 import Qwen3DSparkModel
 from deepspec.modeling.dspark.qwen3.config import (
     build_draft_config as build_qwen3_draft_config,
@@ -46,3 +50,23 @@ class Gemma4DSparkTrainer(Qwen3DSparkTrainer):
             model_args=model_args,
         )
         return Gemma4DSparkModel(draft_config)
+
+
+class Llama3DSparkTrainer(Qwen3DSparkTrainer):
+    def build_models(self):
+        draft_model, tokenizer = super().build_models()
+        mask_token_id = int(draft_model.mask_token_id)
+        mask_token = tokenizer.convert_ids_to_tokens(mask_token_id)
+        assert mask_token == "<|reserved_special_token_0|>", (
+            "Llama DSpark expects mask_token_id to select the unused "
+            "<|reserved_special_token_0|> entry, but "
+            f"id {mask_token_id} maps to {mask_token!r}."
+        )
+        return draft_model, tokenizer
+
+    def _build_draft_model(self, *, target_config, model_args):
+        draft_config = build_llama3_draft_config(
+            target_config=target_config,
+            model_args=model_args,
+        )
+        return Llama3DSparkModel(draft_config)
