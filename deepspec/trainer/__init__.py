@@ -4,12 +4,17 @@ from .dspark_trainer import (
     Llama3DSparkTrainer,
     Qwen3DSparkTrainer,
 )
-from .eagle3_trainer import Gemma4Eagle3Trainer, Qwen3Eagle3Trainer
+from .eagle3_trainer import (
+    Gemma4Eagle3Trainer,
+    Llama3Eagle3Trainer,
+    Qwen3Eagle3Trainer,
+)
 
 __all__ = [
     "BaseTrainer",
     "Gemma4Eagle3Trainer",
     "Gemma4DSparkTrainer",
+    "Llama3Eagle3Trainer",
     "Llama3DSparkTrainer",
     "Qwen3Eagle3Trainer",
     "Qwen3DSparkTrainer",

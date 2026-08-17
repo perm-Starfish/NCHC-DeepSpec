@@ -6,6 +6,10 @@ from deepspec.modeling.eagle3.gemma4.config import (
     build_draft_config as build_gemma4_eagle3_config,
 )
 from deepspec.modeling.eagle3.loss import compute_eagle3_loss
+from deepspec.modeling.eagle3.llama3 import Llama3Eagle3Model
+from deepspec.modeling.eagle3.llama3.config import (
+    build_draft_config as build_llama3_eagle3_config,
+)
 from deepspec.modeling.eagle3.qwen3 import Qwen3Eagle3Model
 from deepspec.modeling.eagle3.qwen3.config import (
     build_draft_config as build_qwen3_eagle3_config,
@@ -18,12 +22,15 @@ class Qwen3Eagle3Trainer(BaseTrainer):
 
     def build_models(self):
         model_args = self.args.model
+        local_files_only = bool(model_args.get("local_files_only", False))
 
         tokenizer = AutoTokenizer.from_pretrained(
             model_args.target_model_name_or_path,
+            local_files_only=local_files_only,
         )
         target_config = AutoConfig.from_pretrained(
             model_args.target_model_name_or_path,
+            local_files_only=local_files_only,
         )
 
         draft_model = self._build_draft_model(
@@ -35,6 +42,7 @@ class Qwen3Eagle3Trainer(BaseTrainer):
         target_model = AutoModelForCausalLM.from_pretrained(
             model_args.target_model_name_or_path,
             dtype=self.precision_dtype,
+            local_files_only=local_files_only,
         ).to(device="cpu").eval()
         target_embed_tokens = target_model.get_input_embeddings()
         target_lm_head = target_model.get_output_embeddings()
@@ -74,3 +82,12 @@ class Gemma4Eagle3Trainer(Qwen3Eagle3Trainer):
             model_args=model_args,
         )
         return Gemma4Eagle3Model(draft_config)
+
+
+class Llama3Eagle3Trainer(Qwen3Eagle3Trainer):
+    def _build_draft_model(self, *, target_config, model_args):
+        draft_config = build_llama3_eagle3_config(
+            target_config=target_config,
+            model_args=model_args,
+        )
+        return Llama3Eagle3Model(draft_config)
