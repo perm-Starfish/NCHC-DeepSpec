@@ -28,6 +28,16 @@ from deepspec.utils import (
 DEFAULT_DATASET_ROOT = "./eval_datasets"
 
 
+def resolve_eval_dtype(precision: str) -> torch.dtype:
+    if precision == "auto":
+        return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+    return {
+        "fp16": torch.float16,
+        "bf16": torch.bfloat16,
+        "fp32": torch.float32,
+    }[precision]
+
+
 def load_and_process_dataset(
     data_name: str,
     dataset_root: str = DEFAULT_DATASET_ROOT,
@@ -451,6 +461,13 @@ class BaseEvaluator:
         self.target_model, self.draft_model, self.tokenizer = self.build_models()
         self.metrics_rows: list[dict[str, object]] = []
 
+    def chat_template_enable_thinking(self) -> bool | None:
+        target_config = self.target_model.config
+        if hasattr(target_config, "text_config"):
+            target_config = target_config.text_config
+        model_type = str(getattr(target_config, "model_type", ""))
+        return False if model_type.startswith("qwen") else None
+
     @property
     def max_proposal_tokens(self) -> int:
         raise NotImplementedError
@@ -535,8 +552,7 @@ class BaseEvaluator:
                 self.tokenizer,
                 messages,
                 add_generation_prompt=True,
-                enable_thinking=False,
-                # enable_thinking=True,
+                enable_thinking=self.chat_template_enable_thinking(),
             ).to(self.device)
             responses.append(
                 self.generate_one_sample(

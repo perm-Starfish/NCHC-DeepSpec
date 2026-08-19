@@ -12,6 +12,7 @@ from deepspec.eval.base_evaluator import (
     VerificationResult,
     assert_no_final_target_layer,
     generate_decoding_sample,
+    resolve_eval_dtype,
 )
 from deepspec.eval.dspark.confidence_head import ConfidenceHeadRecorder
 from deepspec.eval.dspark.draft_ops import (
@@ -21,6 +22,7 @@ from deepspec.eval.dspark.draft_ops import (
 )
 from deepspec.modeling.dspark.common import extract_context_feature
 from deepspec.modeling.dspark.gemma4 import Gemma4DSparkModel
+from deepspec.modeling.dspark.llama3 import Llama3DSparkModel
 from deepspec.modeling.dspark.qwen3 import Qwen3DSparkModel
 from deepspec.utils import jsonable
 
@@ -66,20 +68,26 @@ class Qwen3DSparkEvaluator(BaseEvaluator):
         )
 
     def build_models(self) -> tuple[object, Qwen3DSparkModel, AutoTokenizer]:
+        dtype = resolve_eval_dtype(self.args.precision)
         target_model = AutoModelForCausalLM.from_pretrained(
             self.args.target_name_or_path,
-            dtype=torch.bfloat16,
+            dtype=dtype,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
+            local_files_only=self.args.local_files_only,
         ).to(device=self.device).eval()
 
         draft_model = self.draft_model_cls.from_pretrained(
             self.args.draft_name_or_path,
-            dtype=torch.bfloat16,
+            dtype=dtype,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
+            local_files_only=self.args.local_files_only,
         ).to(self.device).eval()
         assert_no_final_target_layer(target_model, draft_model.target_layer_ids)
         assert 0.0 <= float(self.args.confidence_threshold) <= 1.0
-        tokenizer = AutoTokenizer.from_pretrained(self.args.target_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.args.target_name_or_path,
+            local_files_only=self.args.local_files_only,
+        )
         return target_model, draft_model, tokenizer
 
     def _init_context(
@@ -223,3 +231,7 @@ class Qwen3DSparkEvaluator(BaseEvaluator):
 
 class Gemma4DSparkEvaluator(Qwen3DSparkEvaluator):
     draft_model_cls = Gemma4DSparkModel
+
+
+class Llama3DSparkEvaluator(Qwen3DSparkEvaluator):
+    draft_model_cls = Llama3DSparkModel

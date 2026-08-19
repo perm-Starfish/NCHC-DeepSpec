@@ -12,9 +12,11 @@ from deepspec.eval.base_evaluator import (
     assert_no_final_target_layer,
     generate_decoding_sample,
     has_stop_token,
+    resolve_eval_dtype,
 )
 from deepspec.modeling.eagle3 import extract_eagle3_context_feature
 from deepspec.modeling.eagle3.gemma4 import Gemma4Eagle3Model
+from deepspec.modeling.eagle3.llama3 import Llama3Eagle3Model
 from deepspec.modeling.eagle3.qwen3 import Qwen3Eagle3Model
 from deepspec.utils.sampling import logits_to_probs, sample_tokens
 
@@ -41,21 +43,27 @@ class Qwen3Eagle3Evaluator(BaseEvaluator):
         return int(self.draft_model.ttt_length)
 
     def build_models(self) -> tuple[object, Qwen3Eagle3Model, AutoTokenizer]:
+        dtype = resolve_eval_dtype(self.args.precision)
         target_model = AutoModelForCausalLM.from_pretrained(
             self.args.target_name_or_path,
-            dtype=torch.bfloat16,
+            dtype=dtype,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
+            local_files_only=self.args.local_files_only,
         ).to(device=self.device).eval()
 
         draft_model = self.draft_model_cls.from_pretrained(
             self.args.draft_name_or_path,
-            dtype=torch.bfloat16,
+            dtype=dtype,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
+            local_files_only=self.args.local_files_only,
         ).to(self.device).eval()
         draft_model.target_layer_ids = [int(x) for x in draft_model.target_layer_ids]
         assert_no_final_target_layer(target_model, draft_model.target_layer_ids)
 
-        tokenizer = AutoTokenizer.from_pretrained(self.args.target_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.args.target_name_or_path,
+            local_files_only=self.args.local_files_only,
+        )
         return target_model, draft_model, tokenizer
 
     def _init_context(
@@ -192,4 +200,12 @@ class Gemma4Eagle3Evaluator(Qwen3Eagle3Evaluator):
     draft_model_cls = Gemma4Eagle3Model
 
 
-__all__ = ["Gemma4Eagle3Evaluator", "Qwen3Eagle3Evaluator"]
+class Llama3Eagle3Evaluator(Qwen3Eagle3Evaluator):
+    draft_model_cls = Llama3Eagle3Model
+
+
+__all__ = [
+    "Gemma4Eagle3Evaluator",
+    "Llama3Eagle3Evaluator",
+    "Qwen3Eagle3Evaluator",
+]
