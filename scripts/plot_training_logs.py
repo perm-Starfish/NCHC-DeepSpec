@@ -256,7 +256,9 @@ def save_comparison_plot(all_df, output_dir):
     axes[1].grid(alpha=0.25)
     axes[1].legend()
 
-    fig.suptitle("DSpark vs. DFlash vs. EAGLE-3", fontsize=14)
+    #fig.suptitle("DSpark vs. DFlash vs. EAGLE-3", fontsize=14)
+    models = all_df["model"].drop_duplicates().tolist()
+    fig.suptitle(" vs. ".join(models) + ": Training Loss", fontsize=14)
     fig.tight_layout()
 
     fig.savefig(
@@ -357,7 +359,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Plot DSpark, DFlash, and EAGLE-3 training logs."
     )
-    parser.add_argument("--dspark", type=Path, required=True)
+    parser.add_argument("--dspark", type=Path, required=False)
     parser.add_argument("--dflash", type=Path, required=True)
     parser.add_argument("--eagle3", type=Path, required=True)
     parser.add_argument(
@@ -380,7 +382,7 @@ def main():
         ("DFlash", args.dflash),
         ("EAGLE-3", args.eagle3),
     ]
-
+    inputs = [(name, path) for name, path in inputs if path is not None]
     parsed = []
 
     for model_name, log_path in inputs:
