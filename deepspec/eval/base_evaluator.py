@@ -27,6 +27,20 @@ from deepspec.utils import (
 
 DEFAULT_DATASET_ROOT = "./eval_datasets"
 
+CUSTOM_TASK_DATASETS = {
+    "llama32_gsm8k": "gsm8k",
+    "llama32_math": "math",
+    "llama32_mmlu_stem": "mmlu_stem",
+    "llama32_ocw": "ocw",
+    "llama32_tw_function_call": "tw_function_call_reasoning_10k",
+    "llama32_tw_instruct": "tw_instruct_500k",
+    "llama32_bailong": "bailong_bench",
+}
+
+
+def normalize_dataset_name(value: str) -> str:
+    return value.strip().lower().replace("-", "_")
+
 
 def resolve_eval_dtype(precision: str) -> torch.dtype:
     if precision == "auto":
@@ -41,9 +55,18 @@ def resolve_eval_dtype(precision: str) -> torch.dtype:
 def load_and_process_dataset(
     data_name: str,
     dataset_root: str = DEFAULT_DATASET_ROOT,
+    custom_eval_path: str | None = None,
 ):
-    dataset_path = Path(dataset_root) / f"{data_name}.jsonl"
-    assert dataset_path.exists()
+    selected_dataset = CUSTOM_TASK_DATASETS.get(data_name)
+    if selected_dataset is None:
+        dataset_path = Path(dataset_root) / f"{data_name}.jsonl"
+    else:
+        if custom_eval_path is None:
+            raise ValueError(f"Task {data_name!r} requires --custom-eval-path.")
+        dataset_path = Path(custom_eval_path)
+
+    if not dataset_path.is_file():
+        raise FileNotFoundError(f"Evaluation dataset not found: {dataset_path}")
 
     rows = []
     with dataset_path.open("r", encoding="utf-8") as handle:
@@ -52,6 +75,17 @@ def load_and_process_dataset(
             if not line:
                 continue
             row = json.loads(line)
+
+            if selected_dataset is not None:
+                row_dataset = row.get("dataset")
+                if not isinstance(row_dataset, str):
+                    raise ValueError(
+                        f"{dataset_path}:{line_number} must contain a string "
+                        "field `dataset` for custom evaluation tasks."
+                    )
+                if normalize_dataset_name(row_dataset) != selected_dataset:
+                    continue
+
             turns = row.get("turns")
             assert (
                 isinstance(turns, list)
@@ -62,6 +96,12 @@ def load_and_process_dataset(
             )
             row["turns"] = turns[:1]
             rows.append(row)
+
+    if selected_dataset is not None and not rows:
+        raise ValueError(
+            f"No rows for dataset {selected_dataset!r} were found in "
+            f"{dataset_path}."
+        )
     return rows
 
 
@@ -534,7 +574,10 @@ class BaseEvaluator:
         max_samples: int | None,
     ) -> list[SimpleNamespace]:
         seed_all(int(self.args.seed))
-        dataset = load_and_process_dataset(dataset_name)
+        dataset = load_and_process_dataset(
+            dataset_name,
+            custom_eval_path=getattr(self.args, "custom_eval_path", None),
+        )
 
         if max_samples is not None and len(dataset) > max_samples:
             rng = random.Random(int(self.args.seed))
