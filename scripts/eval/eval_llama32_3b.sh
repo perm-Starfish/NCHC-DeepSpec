@@ -9,9 +9,8 @@ set -Eeuo pipefail
 #   3,249 samples
 #
 # Best checkpoints:
-#   EAGLE-3: lr=5e-5, step=200
-#   DFlash : lr=6e-5, step=420
-#   DSpark : CE-only, lr=6e-5, step=75, markov_rank=256
+#   The values below are defaults only. Override *_STEP, *_DRAFT,
+#   *_PATTERN, CHECKPOINT_ROOT, or other path variables at runtime.
 # ============================================================
 
 PROJECT_DIR="${PROJECT_DIR:-$HOME/Llama-DeepSpec}"
@@ -64,12 +63,30 @@ TEMPERATURE="${TEMPERATURE:-0}"
 PRECISION="${PRECISION:-fp16}"
 SEED="${SEED:-980406}"
 
-# If the exact checkpoint path is known, it can be overridden
-# with environment variables before execution:
+# Default best steps. If *_DRAFT is explicitly set and ends in step_<N>,
+# the step is inferred from that directory unless *_STEP is also set.
+EAGLE3_DEFAULT_STEP="200"
+DFLASH_DEFAULT_STEP="420"
+DSPARK_DEFAULT_STEP="75"
+
+# Optional regular expressions used only when automatically discovering a
+# checkpoint. Set a pattern to an empty string to disable preferred matching.
+EAGLE3_PATTERN="${EAGLE3_PATTERN-eagle3.*(lr)?5e-?5}"
+DFLASH_PATTERN="${DFLASH_PATTERN-dflash.*(lr)?6e-?5}"
+DSPARK_PATTERN="${DSPARK_PATTERN-dspark.*((ce[-_]?only.*(lr)?6e-?5)|((lr)?6e-?5.*ce[-_]?only))}"
+
+# Override steps and let the script discover checkpoints under CHECKPOINT_ROOT:
 #
-# EAGLE3_DRAFT=/data/checkpoints/deepspec/.../step_200 \
-# DFLASH_DRAFT=/data/checkpoints/deepspec/.../step_420 \
-# DSPARK_DRAFT=/data/checkpoints/deepspec/.../step_75 \
+# EAGLE3_STEP=240 DFLASH_STEP=500 DSPARK_STEP=100 \
+# CHECKPOINT_ROOT=/data/checkpoints/another_run \
+# ./eval_llama32_3b.sh
+#
+# Or specify exact checkpoint paths. The step is inferred from a final
+# step_<N> directory name, or can be set explicitly with *_STEP:
+#
+# EAGLE3_DRAFT=/data/checkpoints/run_a/step_240 \
+# DFLASH_DRAFT=/data/checkpoints/run_b/step_500 \
+# DSPARK_DRAFT=/data/checkpoints/run_c/step_100 \
 # ./eval_llama32_3b.sh
 
 RUN_TAG="$(date '+%Y%m%d_%H%M%S')"
@@ -87,8 +104,7 @@ discover_checkpoint() {
 
     mapfile -t all_candidates < <(
         find "$CHECKPOINT_ROOT" \
-            -mindepth 2 \
-            -maxdepth 2 \
+            -mindepth 1 \
             -type d \
             -name "step_${step}" \
             2>/dev/null |
@@ -102,10 +118,12 @@ discover_checkpoint() {
         return 1
     fi
 
-    mapfile -t preferred_candidates < <(
-        printf '%s\n' "${all_candidates[@]}" |
-        grep -Ei "$preferred_pattern" || true
-    )
+    if [[ -n "$preferred_pattern" ]]; then
+        mapfile -t preferred_candidates < <(
+            printf '%s\n' "${all_candidates[@]}" |
+            grep -Ei "$preferred_pattern" || true
+        )
+    fi
 
     if (( ${#preferred_candidates[@]} == 1 )); then
         printf '%s\n' "${preferred_candidates[0]}"
@@ -128,6 +146,30 @@ discover_checkpoint() {
     printf '  %s\n' "${all_candidates[@]}" >&2
     echo "Please specify the exact checkpoint path at the top of the script or during execution." >&2
     return 1
+}
+
+
+resolve_step() {
+    local configured_step="$1"
+    local draft_path="$2"
+    local default_step="$3"
+    local method="$4"
+    local resolved_step=""
+
+    if [[ -n "$configured_step" ]]; then
+        resolved_step="$configured_step"
+    elif [[ -n "$draft_path" && "$(basename "$draft_path")" =~ ^step_([0-9]+)$ ]]; then
+        resolved_step="${BASH_REMATCH[1]}"
+    else
+        resolved_step="$default_step"
+    fi
+
+    if [[ ! "$resolved_step" =~ ^[0-9]+$ ]] || (( resolved_step <= 0 )); then
+        echo "ERROR: ${method} step must be a positive integer: $resolved_step" >&2
+        return 1
+    fi
+
+    printf '%s\n' "$resolved_step"
 }
 
 
@@ -216,20 +258,38 @@ fi
 
 # Discover selected checkpoints
 
+EAGLE3_STEP="$(resolve_step \
+    "${EAGLE3_STEP:-}" \
+    "${EAGLE3_DRAFT:-}" \
+    "$EAGLE3_DEFAULT_STEP" \
+    "EAGLE-3")"
+
+DFLASH_STEP="$(resolve_step \
+    "${DFLASH_STEP:-}" \
+    "${DFLASH_DRAFT:-}" \
+    "$DFLASH_DEFAULT_STEP" \
+    "DFlash")"
+
+DSPARK_STEP="$(resolve_step \
+    "${DSPARK_STEP:-}" \
+    "${DSPARK_DRAFT:-}" \
+    "$DSPARK_DEFAULT_STEP" \
+    "DSpark")"
+
 EAGLE3_DRAFT="${EAGLE3_DRAFT:-$(discover_checkpoint \
     "eagle3" \
-    "200" \
-    'eagle3.*(lr)?5e-?5')}"
+    "$EAGLE3_STEP" \
+    "$EAGLE3_PATTERN")}"
 
 DFLASH_DRAFT="${DFLASH_DRAFT:-$(discover_checkpoint \
     "dflash" \
-    "420" \
-    'dflash.*(lr)?6e-?5')}"
+    "$DFLASH_STEP" \
+    "$DFLASH_PATTERN")}"
 
 DSPARK_DRAFT="${DSPARK_DRAFT:-$(discover_checkpoint \
     "dspark" \
-    "75" \
-    'dspark.*((ce[-_]?only.*(lr)?6e-?5)|((lr)?6e-?5.*ce[-_]?only))')}"
+    "$DSPARK_STEP" \
+    "$DSPARK_PATTERN")}"
 
 
 # Model, container, and checkpoint validation
@@ -286,9 +346,9 @@ echo "Temperature  : $TEMPERATURE"
 echo "Precision    : $PRECISION"
 echo "Seed         : $SEED"
 echo
-echo "EAGLE-3      : $EAGLE3_DRAFT"
-echo "DFlash       : $DFLASH_DRAFT"
-echo "DSpark       : $DSPARK_DRAFT"
+echo "EAGLE-3      : step=$EAGLE3_STEP, checkpoint=$EAGLE3_DRAFT"
+echo "DFlash       : step=$DFLASH_STEP, checkpoint=$DFLASH_DRAFT"
+echo "DSpark       : step=$DSPARK_STEP, checkpoint=$DSPARK_DRAFT"
 echo "============================================================"
 echo
 echo "Only the following custom datasets will be evaluated:"
@@ -361,9 +421,9 @@ run_eval() {
 }
 
 
-run_eval "eagle3" "200" "$EAGLE3_DRAFT"
-run_eval "dflash" "420" "$DFLASH_DRAFT"
-run_eval "dspark" "75" "$DSPARK_DRAFT"
+run_eval "eagle3" "$EAGLE3_STEP" "$EAGLE3_DRAFT"
+run_eval "dflash" "$DFLASH_STEP" "$DFLASH_DRAFT"
+run_eval "dspark" "$DSPARK_STEP" "$DSPARK_DRAFT"
 
 echo
 echo "============================================================"
