@@ -1,0 +1,52 @@
+{
+  "release": "llama-deepspec-best-v1",
+  "target_model": "meta-llama/Llama-3.2-3B-Instruct",
+  "common": {
+    "target_layer_ids": [1, 7, 13, 19, 25],
+    "precision": "fp16",
+    "target_cache": "/data/deepspec_cache/llama32_3b_instruct_target_cache"
+  },
+  "models": {
+    "eagle3": {
+      "ttt_length": 7,
+      "draft_num_hidden_layers": 1,
+      "learning_rate": 0.00005,
+      "training_final_step": 420,
+      "selected_checkpoint_step": 200,
+      "config": "config/best/eagle3_llama32_3b_lr5e5.py",
+      "checkpoint": "/data/checkpoints/deepspec/eagle3_ttt7_llama32_3b_instruct_v100_lr5e5/step_200"
+    },
+    "dflash": {
+      "block_size": 7,
+      "num_draft_layers": 5,
+      "mask_token_id": 128002,
+      "num_anchors": 64,
+      "markov_rank": 0,
+      "ce_loss_alpha": 1.0,
+      "l1_loss_alpha": 0.0,
+      "confidence_head_alpha": 0.0,
+      "learning_rate": 0.00006,
+      "training_final_step": 420,
+      "selected_checkpoint_step": 420,
+      "config": "config/best/dflash_llama32_3b_lr6e5.py",
+      "checkpoint": "/data/checkpoints/deepspec/dflash_block7_llama32_3b_instruct_v100_lr6e5/step_420"
+    },
+    "dspark": {
+      "objective": "CE-only",
+      "block_size": 7,
+      "num_draft_layers": 5,
+      "mask_token_id": 128002,
+      "num_anchors": 64,
+      "markov_rank": 256,
+      "markov_head_type": "vanilla",
+      "ce_loss_alpha": 1.0,
+      "l1_loss_alpha": 0.0,
+      "confidence_head_alpha": 0.0,
+      "learning_rate": 0.00006,
+      "training_final_step": 100,
+      "selected_checkpoint_step": 75,
+      "config": "config/best/dspark_llama32_3b_lr6e5_ceonly.py",
+      "checkpoint": "/data/checkpoints/deepspec/dspark_block7_llama32_3b_instruct_v100_lr6e5_ceonly_markov_pilot100/step_75"
+    }
+  }
+}
