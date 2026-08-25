@@ -1,0 +1,54 @@
+FROM deepspec:cuda12.6
+
+USER root
+WORKDIR /workspace/DeepSpec
+
+# Install the exact dependency versions recorded from the working container.
+COPY requirements.lock.txt /tmp/requirements.lock.txt
+
+RUN python -m pip install \
+    --no-cache-dir \
+    -r /tmp/requirements.lock.txt
+
+# Remove any source tree inherited from an older development-image build.
+# This affects only the new image layer, never the host repository.
+RUN find /workspace/DeepSpec \
+        -mindepth 1 \
+        -maxdepth 1 \
+        -exec rm -rf -- {} +
+
+# Copy the release source code, configs, scripts and documentation.
+# Large files are excluded by .dockerignore.
+COPY --chown=deepspec:deepspec . /workspace/DeepSpec
+
+RUN find /workspace/DeepSpec/scripts \
+        -type f \
+        -name "*.sh" \
+        -exec chmod +x {} + \
+    && git config \
+        --system \
+        --add safe.directory /workspace/DeepSpec
+
+# Fail the build early if release metadata, Python source, or the bundled
+# custom-evaluation subset is invalid or missing.
+RUN python -m json.tool release/best_models.json >/dev/null \
+    && python -m compileall -q config/best deepspec train.py eval.py \
+    && test -f data_v2/prompts/eval/all_eval.jsonl \
+    && test -f data_v2/references/all_eval.jsonl
+
+ENV PYTHONPATH=/workspace/DeepSpec
+ENV BEST_MODELS_MANIFEST=/workspace/DeepSpec/release/best_models.json
+
+# These are runtime mount paths, not files stored in the image.
+ENV TARGET_MODEL_PATH=/data/models/meta-llama/Llama-3.2-3B-Instruct
+ENV LLAMA_3_2_3B_INSTRUCT_PATH=/data/models/meta-llama/Llama-3.2-3B-Instruct
+
+LABEL ai.deepspec.release="llama-deepspec-best-v1"
+LABEL ai.deepspec.target-model="meta-llama/Llama-3.2-3B-Instruct"
+LABEL ai.deepspec.best.eagle3="lr=5e-5,step=200"
+LABEL ai.deepspec.best.dflash="lr=6e-5,step=420"
+LABEL ai.deepspec.best.dspark="ce=1,l1=0,confidence=0,lr=6e-5,step=75"
+
+USER deepspec
+
+CMD ["/bin/bash"]

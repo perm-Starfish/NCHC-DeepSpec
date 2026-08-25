@@ -12,6 +12,10 @@ python -m pip install -r requirements.txt
 
 Data preparation additionally requires an inference engine to serve the target model when regenerating answers; see [scripts/data/README.md](./scripts/data/README.md) for details.
 
+For the reproducible Llama-3.2-3B-Instruct release image, selected checkpoints,
+and the three best training recipes, see [release/README.md](./release/README.md)
+and [release/BEST_MODELS.md](./release/BEST_MODELS.md).
+
 ## Workflow
 
 Run the stages in order — each stage's output feeds the next:

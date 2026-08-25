@@ -1,7 +1,10 @@
 .git
 .gitignore
+.gitattributes
+.github/
 
 __pycache__/
+**/__pycache__/
 *.py[cod]
 
 *.log
@@ -10,4 +13,31 @@ __pycache__/
 .idea/
 
 .cache/
+.venv/
+.pytest_cache/
+.mypy_cache/
 wandb/
+
+training_plots/
+outputs/
+tensorboard/
+
+checkpoints/
+models/
+deepspec_cache/
+train_datasets/
+
+# Keep only the small, reproducible evaluation subset in the release image.
+# Training and intermediate data should be regenerated or mounted separately.
+data/
+raw/
+data_v2/**
+!data_v2/prompts/
+!data_v2/prompts/eval/
+!data_v2/prompts/eval/all_eval.jsonl
+!data_v2/references/
+!data_v2/references/all_eval.jsonl
+
+.env
+*.tar
+*.tar.gz
