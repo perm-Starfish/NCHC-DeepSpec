@@ -29,12 +29,11 @@ RUN find /workspace/DeepSpec/scripts \
         --system \
         --add safe.directory /workspace/DeepSpec
 
-# Fail the build early if release metadata, Python source, or the bundled
-# custom-evaluation subset is invalid or missing.
+# Validate release metadata and source code.
+# Dataset contents are mounted at runtime and are not included in the image.
 RUN python -m json.tool release/best_models.json >/dev/null \
     && python -m compileall -q config/best deepspec train.py eval.py \
-    && test -f data_v2/prompts/eval/all_eval.jsonl \
-    && test -f data_v2/references/all_eval.jsonl
+    && test -L eval_datasets/llama32_3b_custom.jsonl
 
 ENV PYTHONPATH=/workspace/DeepSpec
 ENV BEST_MODELS_MANIFEST=/workspace/DeepSpec/release/best_models.json
